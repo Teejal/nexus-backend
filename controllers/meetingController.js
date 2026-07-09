@@ -1,16 +1,24 @@
 import Meeting from '../models/Meeting.js';
+import User from '../models/User.js';
 
 // @route   POST /api/meetings
 // @desc    Schedule a new meeting (with conflict detection)
 // @access  Private
 export const scheduleMeeting = async (req, res) => {
   try {
-    const { participantId, date, time, duration, notes } = req.body;
+    const { participantEmail, date, time, duration, notes } = req.body;
     const organizerId = req.user._id;
 
-    if (!participantId || !date || !time) {
-      return res.status(400).json({ message: 'Participant, date aur time zaroori hai' });
+    if (!participantEmail || !date || !time) {
+      return res.status(400).json({ message: 'Participant email, date, and time are required' });
     }
+
+    // Find the participant by their email
+    const participant = await User.findOne({ email: participantEmail });
+    if (!participant) {
+      return res.status(404).json({ message: 'No user found with this email' });
+    }
+    const participantId = participant._id;
 
     // Conflict detection: check if either the organizer or the participant
     // already has a meeting at this exact date and time (ignoring rejected ones)
@@ -27,7 +35,7 @@ export const scheduleMeeting = async (req, res) => {
     });
 
     if (conflict) {
-      return res.status(400).json({ message: 'Is date aur time pe pehle se ek meeting schedule hai' });
+      return res.status(400).json({ message: 'A meeting is already scheduled at this date and time' });
     }
 
     // No conflict found - safe to create the meeting
@@ -54,12 +62,12 @@ export const acceptMeeting = async (req, res) => {
     const meeting = await Meeting.findById(req.params.id);
 
     if (!meeting) {
-      return res.status(404).json({ message: 'Meeting nahi mili' });
+      return res.status(404).json({ message: 'Meeting not found' });
     }
 
     // Only the participant who was invited can accept the meeting
     if (meeting.participant.toString() !== req.user._id.toString()) {
-      return res.status(403).json({ message: 'Aap ye meeting accept nahi kar sakte' });
+      return res.status(403).json({ message: 'You cannot accept this meeting' });
     }
 
     meeting.status = 'accepted';
@@ -79,11 +87,11 @@ export const rejectMeeting = async (req, res) => {
     const meeting = await Meeting.findById(req.params.id);
 
     if (!meeting) {
-      return res.status(404).json({ message: 'Meeting nahi mili' });
+      return res.status(404).json({ message: 'Meeting not found' });
     }
 
     if (meeting.participant.toString() !== req.user._id.toString()) {
-      return res.status(403).json({ message: 'Aap ye meeting reject nahi kar sakte' });
+      return res.status(403).json({ message: 'You cannot reject this meeting' });
     }
 
     meeting.status = 'rejected';
