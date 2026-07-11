@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import mongoose from 'mongoose';
+import fs from 'fs';
 import http from 'http';
 import { Server } from 'socket.io';
 import authRoutes from './routes/authRoutes.js';
@@ -10,6 +11,10 @@ import meetingRoutes from './routes/meetingRoutes.js';
 import documentRoutes from './routes/documentRoutes.js';
 
 dotenv.config();
+// Make sure the uploads folder exists (Railway doesn't keep empty/gitignored folders)
+if (!fs.existsSync('uploads')) {
+  fs.mkdirSync('uploads');
+}
 
 mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log('MongoDB connected successfully'))
@@ -19,6 +24,8 @@ const app = express();
 
 app.use(express.json());
 app.use(cors());
+// Serve uploaded files publicly so they can be downloaded/viewed
+app.use('/uploads', express.static('uploads'));
 
 app.get('/', (req, res) => {
   res.send('Nexus backend is running');
