@@ -14,12 +14,12 @@ export const registerUser = async (req, res) => {
     const { name, email, password, role } = req.body;
 
     if (!name || !email || !password || !role) {
-      return res.status(400).json({ message: 'Sab fields bharna zaroori hai' });
+      return res.status(400).json({ message: 'All fields are required' });
     }
 
     const existingUser = await User.findOne({ email });
     if (existingUser) {
-      return res.status(400).json({ message: 'Is email se pehle se account hai' });
+      return res.status(400).json({ message: 'An account with this email already exists' });
     }
 
     const user = await User.create({ name, email, password, role });
@@ -44,13 +44,13 @@ export const loginUser = async (req, res) => {
     const user = await User.findOne({ email });
 
     if (!user) {
-      return res.status(401).json({ message: 'Email ya password galat hai' });
+      return res.status(401).json({ message: 'Invalid email or password' });
     }
 
     const isMatch = await user.matchPassword(password);
 
     if (!isMatch) {
-      return res.status(401).json({ message: 'Email ya password galat hai' });
+      return res.status(401).json({ message: 'Invalid email or password' });
     }
 
     res.status(200).json({
